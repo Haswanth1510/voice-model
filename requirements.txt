@@ -9,7 +9,10 @@
 # The lines below are for reference only; use the commands above instead.
 
 # ── Core ML / Transformers ────────────────────────────────────────────────────
-transformers>=4.40.0
+# NOTE: coqui-tts 0.27.5 requires transformers>=4.57.
+#       Do NOT install parler-tts alongside this — it pins transformers==4.46.1
+#       which conflicts with coqui-tts and breaks voice cloning.
+transformers>=4.57.0
 accelerate>=0.27.0
 sentencepiece>=0.1.99
 protobuf>=3.20.0
