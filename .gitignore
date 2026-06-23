@@ -1,0 +1,39 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Temp / output audio files
+*.wav
+*.mp3
+
+# Model weights & Hugging Face cache (too large for git)
+.cache/
+models/
+
+# Gradio temp files
+gradio_cached_examples/
+flagged/

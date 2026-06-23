@@ -1,0 +1,28 @@
+# ── PyTorch (CUDA 12.1 build – GPU accelerated) ──────────────────────────────
+# Install with:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# For CPU-only (no GPU):
+#   pip install torch torchaudio
+#
+# NOTE: Do NOT add torch/torchaudio below if using the above commands directly.
+# The lines below are for reference only; use the commands above instead.
+
+# ── Core ML / Transformers ────────────────────────────────────────────────────
+transformers>=4.40.0
+accelerate>=0.27.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# ── Audio I/O ────────────────────────────────────────────────────────────────
+soundfile>=0.12.1
+pydub>=0.25.1
+numpy>=1.24.0
+scipy>=1.10.0
+
+# ── UI ────────────────────────────────────────────────────────────────────────
+gradio>=4.36.0
+
+# ── Hugging Face Hub (model download/caching) ─────────────────────────────────
+huggingface_hub>=0.23.0
+
