@@ -1,47 +1,65 @@
 # unos Multilingual TTS & Zero-Shot Voice Cloning
 
-A fully offline, open-source multilingual Text-to-Speech (TTS) and Zero-shot Voice Cloning application powered by:
-1. **Meta's MMS-TTS (Massively Multilingual Speech)** models for standard TTS.
-2. **Coqui's XTTS-v2** model for zero-shot voice cloning.
+> A fully offline, open-source multilingual Text-to-Speech and Zero-shot Voice Cloning application — no API keys, no login, no internet required after first setup.
 
-Supports **14 languages** for standard TTS, and **English & Hindi** for zero-shot voice cloning with precise speed control. Unlike gated models, Meta MMS-TTS is completely public and requires no login or Hugging Face authentication tokens.
+Powered by **Meta's MMS-TTS** for standard TTS across 14 languages and **Coqui's XTTS-v2** for zero-shot voice cloning in English & Hindi.
 
 ---
 
-## Features
+## ✨ Features
 
 | Feature | Details |
 |---|---|
 | **Standard TTS Languages** | 14 languages: English, Hindi, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu, Assamese, Dogri, Urdu |
-| **Voice Cloning Languages** | English & Hindi (using Coqui XTTS-v2) |
-| **Voice Control** | Speed slider (Turtle/Rabbit speed factor: 0.25x – 2.0x) |
-| **Speaker Style (Standard)** | Single fixed high-quality voice per language |
-| **Zero-Shot Voice Cloning** | Clones any speaker's voice using a 3–5 second reference WAV recording |
-| **Export** | WAV (always) · MP3 (with ffmpeg) |
-| **Inference** | CUDA GPU (fast) or CPU (slower fallback) |
-| **Offline** | ✅ Works fully offline after first model download |
-| **API** | ❌ No paid/commercial APIs used, no login tokens needed |
+| **Voice Cloning Languages** | English & Hindi (zero-shot, using Coqui XTTS-v2) |
+| **Speed Control** | Smooth speed slider: 0.25× (slow) → 2.0× (fast) |
+| **Reference Audio** | 3–5 second WAV clip recorded via mic or uploaded |
+| **Export Format** | WAV (always available) |
+| **Inference Hardware** | CUDA GPU (fast) or CPU (automatic fallback) |
+| **Fully Offline** | ✅ Works without internet after first model download |
+| **Zero Authentication** | ❌ No API keys, HF tokens, or login required |
+| **UI Theme** | Modern light glassmorphic design (Indigo/Pink/Purple accents) |
 
 ---
 
-## Requirements
+## 🗂️ Project Structure
 
-- Python 3.10 or newer
-- pip
-- *(Optional but strongly recommended)* a CUDA-capable NVIDIA GPU
+```
+voice-model/
+├── app.py                  ← Gradio UI entry point (light glassmorphic theme)
+├── tts_engine.py           ← Unified TTSEngine (delegates to MMS + XTTS)
+├── download_models.py      ← Pre-download all model weights for offline use
+├── requirements.txt        ← Python package dependencies
+├── README.md               ← This file
+├── REPORT.md               ← Full project evaluation & design report
+└── src/
+    ├── mms_engine.py       ← Meta MMS-TTS VITS inference wrapper
+    ├── xtts_engine.py      ← Coqui XTTS-v2 voice cloning wrapper
+    ├── presets.py          ← Language-to-model-ID mappings & emotion configs
+    └── audio_utils.py      ← Audio processing utilities (resampling, etc.)
+```
+
+---
+
+## ⚙️ Requirements
+
+- Python **3.10** or newer
+- `pip`
+- *(Strongly recommended)* NVIDIA GPU with CUDA support
 - *(Optional, for MP3 export)* [ffmpeg](https://ffmpeg.org/) in your PATH
 
 ---
 
-## Setup Instructions
+## 🚀 Setup Instructions
 
-### 1 – Clone / download the project
+### 1 — Clone the repository
 
 ```bash
-cd voice-model-tts
+git clone https://github.com/Haswanth1510/voice-model.git
+cd voice-model
 ```
 
-### 2 – Create a virtual environment (recommended)
+### 2 — Create a virtual environment *(recommended)*
 
 ```bash
 python -m venv .venv
@@ -53,86 +71,98 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3 – Install Python dependencies
+### 3 — Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4 – (Optional) Install ffmpeg for MP3 export
+### 4 — *(Optional)* Pre-download all model weights for offline use
 
-- **Windows:** Download from [ffmpeg.org](https://ffmpeg.org/) and add to PATH, or use `winget install ffmpeg`.
-- **macOS:** `brew install ffmpeg`
-- **Linux:** `sudo apt install ffmpeg` / `sudo dnf install ffmpeg`
+```bash
+# Download English & Hindi MMS models + XTTS-v2 (default)
+python download_models.py
+
+# Download ALL 14 language MMS models + XTTS-v2
+python download_models.py --all-mms
+
+# Skip XTTS-v2 (only download MMS models)
+python download_models.py --no-xtts
+```
+
+### 5 — *(Optional)* Install ffmpeg for MP3 export
+
+| OS | Command |
+|---|---|
+| Windows | `winget install ffmpeg` or download from [ffmpeg.org](https://ffmpeg.org/) |
+| macOS | `brew install ffmpeg` |
+| Linux | `sudo apt install ffmpeg` |
 
 ---
 
-## Running the Application
+## ▶️ Running the Application
 
 ```bash
 python app.py
 ```
 
-The Gradio UI will open automatically in your browser at:
+The Gradio UI opens automatically in your browser at:
 ```
 http://127.0.0.1:7860
 ```
 
 ---
 
-## How Model Weights Are Downloaded & Cached
+## 📦 How Model Weights Are Cached
 
-On the first run of a feature, the model weights are automatically downloaded from Hugging Face Hub to your local cache:
+Model weights are downloaded automatically on first use and cached locally — no manual setup required.
 
-*   **MMS-TTS checkpoints** (~150-200 MB per language): Downloaded anonymously and cached in:
-    *   Windows: `C:\Users\<you>\.cache\huggingface\hub\`
-    *   macOS / Linux: `~/.cache/huggingface/hub/`
-*   **XTTS-v2 model weights** (~1.8 GB): Downloaded on first use of the Voice Cloning tab and cached in:
-    *   Windows: `C:\Users\<you>\AppData\Local\tts\tts_models--multilingual--multi-dataset--xtts_v2`
-    *   macOS / Linux: `~/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2`
+| Model | Size | Cache Location (Windows) |
+|---|---|---|
+| **MMS-TTS** (per language) | ~150–200 MB each | `C:\Users\<you>\.cache\huggingface\hub\` |
+| **Coqui XTTS-v2** | ~1.8 GB total | `C:\Users\<you>\AppData\Local\tts\tts_models--multilingual--...` |
 
-No login or Hugging Face tokens are required. The Coqui license agreement is accepted programmatically via the backend.
+> On macOS/Linux, Hugging Face cache is at `~/.cache/huggingface/hub/` and Coqui at `~/.local/share/tts/`.
 
----
-
-## Why Kannada & Telugu Voice Cloning is Unsupported
-
-AI4Bharat's IndicF5 voice cloning model was evaluated for Kannada and Telugu cloning support, but was rejected because:
-1. It is gated on Hugging Face and requires manual repository access approval.
-2. It requires `huggingface_hub.login()` or setting `HF_TOKEN` environment variables.
-
-This violates our goal of having a completely open, zero-auth, offline-first system. Zero-shot voice cloning is therefore restricted to **English** and **Hindi** via XTTS-v2, which has a public license and does not require registration/authentication.
+No login or Hugging Face tokens are required. The Coqui license agreement is accepted programmatically.
 
 ---
 
-## Project Structure
+## ⚠️ Why Kannada & Telugu Voice Cloning is Not Supported
 
-```
-voice-model-tts/
-├── app.py              ← Gradio UI (entry point)
-├── tts_engine.py       ← MMS-TTS & XTTS-v2 model loading + inference logic
-├── requirements.txt    ← Python dependencies
-├── README.md           ← This file
-└── report/
-    ├── README.md       ← Metadata about the project report
-    └── report.md       ← Full project evaluation report
-```
+AI4Bharat's **IndicF5** voice cloning model was evaluated for Kannada and Telugu support, but was rejected for two reasons:
+
+1. **Gated Repository**: `ai4bharat/IndicF5` requires manual approval on Hugging Face before download.
+2. **Mandatory Token Auth**: Requires `huggingface_hub.login()` or a `HF_TOKEN` environment variable.
+
+These requirements conflict with our core design goal: a **fully offline, zero-auth** system. Voice cloning is therefore limited to **English** and **Hindi** via Coqui XTTS-v2, which is publicly licensed and requires no authentication.
 
 ---
 
-## Known Limitations
+## ⚡ Performance Notes
 
-1. **No Emotion / Tone Control (MMS-TTS)**: The standard TTS models use fixed-style checkpoints that do not support dynamic prompt conditioning.
-2. **Single Voice Per Language (MMS-TTS)**: Each standard TTS language checkpoint is trained on a single speaker.
-3. **Hardware Latency for XTTS-v2**: Zero-shot voice cloning using XTTS-v2 is computationally expensive. Run on an NVIDIA GPU via CUDA for the best real-time performance. On a CPU, inference may take up to 3–4x the audio duration.
+| Mode | Hardware | Real-Time Factor (RTF) |
+|---|---|---|
+| MMS-TTS Standard | CPU | ~0.8 (10s audio in ~8s) |
+| MMS-TTS Standard | CUDA GPU | < 0.05 (near-instantaneous) |
+| XTTS-v2 Voice Cloning | CPU | ~3.5 (10s audio in ~35s) |
+| XTTS-v2 Voice Cloning | CUDA GPU | ~0.2 (10s audio in ~2s) |
 
 ---
 
-## License
+## 🚧 Known Limitations
 
-This project uses the following open-source components:
+1. **No Emotion / Tone Control**: MMS-TTS checkpoints are single-style and do not support prompt-conditioned emotion.
+2. **Single Voice Per Language**: Each MMS-TTS language checkpoint is trained on one fixed speaker.
+3. **XTTS-v2 CPU Latency**: Voice cloning on CPU is slow (~3–4× audio duration). A CUDA GPU is strongly recommended.
 
-- **Meta MMS-TTS** – [CC BY-NC 4.0](https://github.com/facebookresearch/fairseq/tree/main/examples/mms)
-- **Coqui XTTS-v2** – [Coqui Public Model License 1.0.0 (CPML)](https://coqui.ai/cpml.txt)
-- **Gradio** – [Apache 2.0](https://github.com/gradio-app/gradio)
-- **PyTorch** – [BSD](https://github.com/pytorch/pytorch/blob/main/LICENSE)
+---
+
+## 📄 License
+
+| Component | License |
+|---|---|
+| **Meta MMS-TTS** | [CC BY-NC 4.0](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) |
+| **Coqui XTTS-v2** | [Coqui Public Model License 1.0.0 (CPML)](https://coqui.ai/cpml.txt) |
+| **Gradio** | [Apache 2.0](https://github.com/gradio-app/gradio) |
+| **PyTorch** | [BSD License](https://github.com/pytorch/pytorch/blob/main/LICENSE) |

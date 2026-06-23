@@ -1,68 +1,153 @@
-# Project Report: Multilingual TTS & Zero-shot Voice Cloning
+# Project Report: unos Multilingual TTS & Zero-Shot Voice Cloning
+
+## Overview
+
+This report documents the design decisions, model selection rationale, language coverage, performance evaluation, and future improvement recommendations for the **unos Multilingual TTS & Voice Cloning** application — a fully offline, zero-authentication speech synthesis system supporting 14 languages.
+
+---
 
 ## 1. Model Choice & Justification
 
-This project combines two complementary speech synthesis models to deliver a versatile offline speech generation pipeline without reliance on gated APIs or manual authorization workflows.
+The system combines two complementary open-source speech models to deliver a versatile, offline-first speech generation pipeline.
 
-### Standard Text-to-Speech: Meta MMS-TTS
-For standard, multi-language speech generation, we use **Meta's Massively Multilingual Speech Text-to-Speech (MMS-TTS)** checkpoints via the `VitsModel` architecture.
-*   **Fully Open-Access**: Checkpoints are not gated and do not require Hugging Face authentication tokens or API registration.
-*   **CC-BY-NC 4.0 License**: Verified as free for non-commercial research and development.
-*   **VITS Architecture**: An end-to-end Variational Inference with adversarial learning model. Mapping text directly to raw waveforms bypasses intermediate mel-spectrogram steps, providing fast inference and clear speech.
-*   **Lightweight**: Checkpoints are ~150–200 MB, enabling fast cache loads and minimal memory footprints.
+### 1.1 Standard Text-to-Speech — Meta MMS-TTS
 
-### Voice Cloning: Coqui XTTS-v2
-For zero-shot voice cloning, we utilize **Coqui's XTTS-v2** model.
-*   **Zero-shot Transfer**: Generates natural speech in a target voice from a 3–5 second reference audio clip.
-*   **Coqui Public Model License (CPML)**: Allows free non-commercial offline execution.
-*   **Deep Learning Architecture**: Utilizes an autoregressive encoder with a latent diffusion vocoder to capture subtle speaker characteristics (timbre, prosody, and speed).
+For standard multi-language speech synthesis, we use **Meta's Massively Multilingual Speech (MMS-TTS)** checkpoints, built on the **VITS** (Variational Inference with adversarial learning for end-to-end Text-to-Speech) architecture.
 
----
-## 2. Language Coverage, Voice Cloning, & Rejection of IndicF5
+**Why MMS-TTS?**
 
-The system supports speech generation across target languages, but features are stratified by model capabilities:
+- **Fully Open-Access**: Checkpoints are ungated on Hugging Face and require no tokens or authentication. Any user can `from_pretrained()` anonymously.
+- **CC BY-NC 4.0 License**: Verified free for non-commercial research and development use.
+- **End-to-End VITS Architecture**: Maps text directly to raw waveforms, bypassing intermediate mel-spectrogram steps. This gives fast inference and clear, natural-sounding speech.
+- **Lightweight Checkpoints**: Each language checkpoint is ~150–200 MB, enabling rapid cache loads and low GPU memory footprints.
+- **14-Language Coverage**: A single unified API (`VitsModel`, `AutoTokenizer`) covers English, Hindi, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu, Assamese, Dogri, and Urdu.
 
-| Feature / Language | English | Hindi | Kannada | Telugu |
-| :--- | :---: | :---: | :---: | :---: |
-| **Standard TTS (MMS-TTS)** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Voice Cloning (XTTS-v2)** | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
+### 1.2 Zero-Shot Voice Cloning — Coqui XTTS-v2
 
-### Kannada & Telugu Voice Cloning Rejection (IndicF5)
-During architectural design, we explored utilizing AI4Bharat's IndicF5 model to enable Kannada and Telugu voice cloning. However, IndicF5 was rejected due to two principal constraints:
-1. **Gated Access**: The model repository (`ai4bharat/IndicF5`) is gated on Hugging Face, requiring manual registration and waiting for administrator approval.
-2. **Mandatory Token Auth**: Running the model requires active authentication via `huggingface_hub.login()` or configuring local `HF_TOKEN` environment variables.
+For voice cloning, we use **Coqui's XTTS-v2** model.
 
-These requirements violate our primary objective: a fully offline, zero-auth system with instant setup. Therefore, voice cloning is restricted to English and Hindi via Coqui XTTS-v2, which has a public license and does not require registration/authentication.
+**Why XTTS-v2?**
 
-### Phonetic & Morphological Challenges
-Implementing speech synthesis for Dravidian languages (Kannada & Telugu) via Meta's MMS-TTS exposed specific phonetic and morphological limitations:
-1. **Lack of G2P Preprocessing**: Without a dedicated Grapheme-to-Phoneme (G2P) front-end, standard tokenization maps letters directly. This leads to incorrect tokenization of complex consonant conjuncts.
-2. **Agglutination**: Dravidian languages use extensive compound word joining (agglutination). Long compound words can exceed the model's vocabulary boundary mappings, causing distorted pronunciations.
-3. **Synthesis Artifacts**: The lack of localized morphological normalizers before entering VITS tokenization means complex consonant conjuncts can produce slight phonetic "slurring" or metallic artifacts during waveform reconstruction.
+- **Zero-Shot Transfer**: Synthesizes natural speech in any target voice using just a 3–5 second reference WAV clip — no fine-tuning required.
+- **Coqui Public Model License (CPML)**: Allows free, non-commercial, offline execution without API registration.
+- **Deep Learning Architecture**: Uses an autoregressive encoder combined with a latent diffusion vocoder to capture subtle speaker characteristics including timbre, prosody, and speaking rate.
+- **Programmatic License Agreement**: The Coqui TOS can be accepted via `os.environ["COQUI_TOS_AGREED"] = "1"`, eliminating interactive prompts in headless/server deployments.
 
 ---
-## 3. Performance & Evaluation
 
-### Subjective Mean Opinion Score (MOS)
-Estimated MOS scores (1–5 scale, where 5 is human-like) compiled from qualitative synthesis tests:
+## 2. Language Coverage, Voice Cloning & Rejection of IndicF5
 
-| Language | Model | Estimated MOS | Intelligibility | Prosody & Rhythm | Accent Accuracy |
-| :--- | :--- | :---: | :---: | :---: | :---: |
+Features are stratified across models based on their capabilities:
+
+| Feature | English | Hindi | Bengali | Gujarati | Kannada | Malayalam | Marathi | Odia | Punjabi | Tamil | Telugu | Assamese | Dogri | Urdu |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Standard TTS (MMS-TTS)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Voice Cloning (XTTS-v2)** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+### 2.1 Rejection of AI4Bharat IndicF5
+
+During system design, **AI4Bharat's IndicF5** voice cloning model was evaluated to extend cloning support to Kannada and Telugu. It was rejected due to two unresolvable constraints:
+
+1. **Gated Repository**: The `ai4bharat/IndicF5` Hugging Face repository requires manual registration and admin approval before weights can be downloaded — this is an asynchronous, human-gated process.
+2. **Mandatory Token Authentication**: Executing the model requires either calling `huggingface_hub.login()` or configuring a local `HF_TOKEN` environment variable. This means the system cannot run on a fresh machine without pre-authentication.
+
+Both constraints directly violate our core design principle: **a fully offline, zero-auth system with instant, friction-free setup**. Voice cloning is therefore restricted to English and Hindi via Coqui XTTS-v2, which has a public license and requires no registration or authentication.
+
+### 2.2 Phonetic & Morphological Challenges in Dravidian Languages
+
+Despite standard TTS support via MMS-TTS, Kannada and Telugu present specific phonetic challenges:
+
+1. **Lack of G2P Preprocessing**: Without a dedicated Grapheme-to-Phoneme (G2P) front-end, standard tokenization maps Unicode characters directly to phoneme IDs. This leads to incorrect handling of complex consonant conjuncts (e.g., ಕ್ಕ, ట్ట).
+2. **Agglutinative Morphology**: Dravidian languages form very long compound words by agglutination. Extended sequences can exceed the model's internal vocabulary boundary mappings, producing distorted or truncated pronunciations.
+3. **Synthesis Artifacts**: Without a localized morphological normalizer before VITS tokenization, complex conjuncts may produce phonetic slurring or metallic waveform artifacts during reconstruction.
+
+---
+
+## 3. System Architecture
+
+```
+User Input (Text + Language + Speed)
+        │
+        ▼
+  ┌─────────────────┐
+  │   app.py        │  ← Gradio UI (light glassmorphic theme)
+  │   (Frontend)    │
+  └────────┬────────┘
+           │
+           ▼
+  ┌─────────────────┐
+  │  tts_engine.py  │  ← Unified TTSEngine
+  │  (Dispatcher)   │
+  └────┬───────┬────┘
+       │       │
+       ▼       ▼
+ ┌──────────┐ ┌──────────┐
+ │mms_engine│ │xtts_eng. │
+ │ (VITS)   │ │ (XTTS-v2)│
+ └──────────┘ └──────────┘
+       │             │
+       ▼             ▼
+  WAV Output     WAV Output
+```
+
+### Key Design Patterns
+
+- **Lazy Loading**: Models are only loaded into GPU/CPU memory on first use, preventing startup delays and unnecessary memory consumption when features are not used.
+- **Singleton Engine**: A single `TTSEngine` instance is shared across all Gradio requests via a module-level `_engine` variable, preventing repeated model reloads between requests.
+- **torchaudio Monkey-Patch**: `torchaudio.load` and `torchaudio.save` are patched to use `soundfile` as the backend, bypassing broken `torchcodec`/FFmpeg dependencies that are not required for WAV-only workflows.
+
+---
+
+## 4. Performance & Evaluation
+
+### 4.1 Subjective Mean Opinion Score (MOS)
+
+Estimated MOS scores (1–5 scale, 5 = human-like) from qualitative synthesis testing:
+
+| Language | Model | MOS (est.) | Intelligibility | Prosody & Rhythm | Accent Accuracy |
+|:---|:---|:---:|:---:|:---:|:---:|
 | **English** | MMS-TTS | **4.0 / 5** | High | Natural | Excellent |
-| **Hindi** | MMS-TTS | **3.7 / 5** | High | Fair-Good | Native |
-| **Telugu** | MMS-TTS | **3.4 / 5** | Moderate-High | Fair | Good |
+| **Hindi** | MMS-TTS | **3.7 / 5** | High | Fair–Good | Native |
+| **Telugu** | MMS-TTS | **3.4 / 5** | Moderate–High | Fair | Good |
 | **Kannada** | MMS-TTS | **3.3 / 5** | Moderate | Fair | Good |
-| **English** | XTTS-v2 | **4.1 / 5** | High | High (Captures timbre) | Excellent |
-| **Hindi** | XTTS-v2 | **3.6 / 5** | Moderate-High | Fair-Good | Native |
+| **English** | XTTS-v2 Clone | **4.1 / 5** | High | High | Excellent |
+| **Hindi** | XTTS-v2 Clone | **3.6 / 5** | Moderate–High | Fair–Good | Native |
 
-### Computational Latency (Real-time Factor - RTF)
-*   **MMS-TTS (Standard)**: Extremely fast. On modern CPU, RTF ~0.8 (generates 10s of audio in 8s). On CUDA GPU, RTF < 0.05 (instantaneous).
-*   **XTTS-v2 (Cloning)**: Computationally heavy. On modern CPU, RTF ~3.5 (generates 10s of audio in 35s). On CUDA GPU, RTF ~0.2 (generates 10s of audio in 2s).
+### 4.2 Computational Latency (Real-Time Factor)
+
+| Model | Hardware | RTF | Practical Example |
+|:---|:---|:---:|:---|
+| MMS-TTS | CPU | ~0.8 | 10s audio generated in ~8s |
+| MMS-TTS | CUDA GPU | < 0.05 | Near-instantaneous |
+| XTTS-v2 | CPU | ~3.5 | 10s audio generated in ~35s |
+| XTTS-v2 | CUDA GPU | ~0.2 | 10s audio generated in ~2s |
+
+> **Recommendation**: A CUDA-capable GPU is strongly recommended for XTTS-v2 voice cloning. MMS-TTS is fast even on CPU.
 
 ---
 
-## 4. Recommendations for Future Improvement
+## 5. UI Design
 
-1.  **Phonetic Front-end G2P**: Integrate a Grapheme-to-Phoneme preprocessor for Kannada and Telugu to normalize complex conjuncts and split agglutinative compound terms prior to VITS tokenization.
-2.  **Post-Synthesis Pitch Shifting**: Implement phase-vocoder pitch scaling (e.g., using `scipy` or `librosa`) to allow virtual voice pitch control for the single-speaker MMS-TTS models.
-3.  **Seed Anchoring**: Expose deterministic noise seed controls in the stochastic duration predictor of the VITS architecture to allow exact reproduction of speech waveforms for identical text.
+The Gradio front-end uses a premium **light glassmorphic** design theme:
+
+- **Background**: Soft gradient from `#f4f6fa` to `#e2eaf5` (no dark mode)
+- **Cards**: Semi-transparent white panels with blurred borders (`rgba(255,255,255,0.75)`)
+- **Accents**: Indigo (`#4f46e5`), Purple (`#9333ea`), Pink (`#db2777`) — used for buttons, labels, and language pills
+- **Typography**: Google Fonts — **Outfit** (headings) and **Plus Jakarta Sans** (body)
+- **Animations**: Subtle hover transitions, rotating glow in hero header, button lift-on-hover effects
+
+---
+
+## 6. Recommendations for Future Improvement
+
+1. **Phonetic G2P Front-end**: Integrate a Grapheme-to-Phoneme preprocessor (e.g., `indic-transliteration` or a custom rule-based normalizer) for Kannada and Telugu to handle complex conjuncts and agglutinative compounds before VITS tokenization.
+
+2. **Post-Synthesis Pitch Shifting**: Implement phase-vocoder pitch scaling using `scipy` or `librosa` to provide virtual voice pitch control for the single-speaker MMS-TTS checkpoints, expanding expressive range without model retraining.
+
+3. **Deterministic Noise Seeds**: Expose the stochastic duration predictor's noise seed in the UI. This allows users to reproduce identical waveforms for the same text input — useful for consistent voice-over production.
+
+4. **Streaming Output**: Integrate Gradio's streaming audio output to begin playback before full synthesis completes, reducing perceived latency for longer texts.
+
+5. **MP3 Export**: Integrate optional FFmpeg post-processing to export in MP3 format for users who have FFmpeg available, reducing output file sizes by ~60–70%.
+
+6. **Language Auto-Detection**: Integrate a lightweight language identifier (e.g., `langdetect` or `fasttext`) to automatically select the correct MMS-TTS language model from input text, removing the need for manual language selection.
